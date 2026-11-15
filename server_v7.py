@@ -597,7 +597,7 @@ def run_conversion(src, video_id, duration_hint=0):
     # edge cases from force_original_aspect_ratio and guarantees fixed-size RGB frames.
     vf = (
         f"fps={VIDEO_TARGET_FPS},"
-        f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:flags=lanczos,
+        f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:flags=lanczos,"
         f"unsharp=5:5:0.35:3:3:0.0,setsar=1"
     )
 
