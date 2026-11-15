@@ -52,10 +52,10 @@ DOWNLOADS_DIR = r"C:\Users\marcu\OneDrive\Desktop\ScratchTube\downloads"
 DELIMITER = "‡"
 THUMBNAIL_HEIGHT = 96
 
-# ScratchTube v6 Video Specification
+# ScratchTube v7 Video Specification
 VIDEO_WIDTH = 128
 VIDEO_HEIGHT = 72
-VIDEO_TARGET_FPS = 14
+VIDEO_TARGET_FPS = 15
 FRAME_SIZE = VIDEO_WIDTH * VIDEO_HEIGHT * 3  # exactly 27,648 bytes per RGB24 frame
 HEX_FRAME_SIZE = FRAME_SIZE * 2              # exactly 55,296 hex characters per frame
 
@@ -533,7 +533,7 @@ def fetch_source(video_id):
         opts.update({
             # Prefer 360p then 480p: fast download, minimal CPU downscaling to 128x72
             "format": "bv*[height<=360]+ba/b[height<=360]/bv*[height<=480]+ba/b[height<=480]/bv*+ba/b",
-            "concurrent_fragment_downloads": 8,
+            "concurrent_fragment_downloads": 4,
             "merge_output_format": "mkv",
             "progress_hooks": [hook],
             "outtmpl": os.path.join(DOWNLOADS_DIR, f"{video_id}_src.%(ext)s"),
@@ -595,11 +595,13 @@ def run_conversion(src, video_id, duration_hint=0):
     duration = probed_dur if probed_dur > 0 else duration_hint
     # Direct scale to the exact 128x72 16:9 target. Scaling directly avoids rounding
     # edge cases from force_original_aspect_ratio and guarantees fixed-size RGB frames.
+    # Reset both media timelines to zero. At 128x72, fast_bilinear is
+    # sufficient and avoids unnecessary sharpening work during conversion.
     vf = (
-        f"fps={VIDEO_TARGET_FPS},"
-        f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:flags=lanczos,"
-        f"unsharp=5:5:0.35:3:3:0.0,setsar=1"
+        f"setpts=PTS-STARTPTS,fps={VIDEO_TARGET_FPS},"
+        f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:flags=fast_bilinear,setsar=1"
     )
+    audio_filter = "aresample=async=1:first_pts=0,asetpts=PTS-STARTPTS"
 
     tmp_v = frames_path(video_id) + ".part"
     tmp_a = audio_path(video_id) + ".part.mp3"
@@ -615,6 +617,7 @@ def run_conversion(src, video_id, duration_hint=0):
             tmp_v,
             "-map", f"0:{a_idx}",
             "-vn",
+            "-af", audio_filter,
             "-ac", "2",
             "-ar", "44100",
             "-c:a", "libmp3lame",
@@ -632,6 +635,7 @@ def run_conversion(src, video_id, duration_hint=0):
             tmp_v,
             "-map", "1:a",
             "-t", f"{duration:.3f}",
+            "-af", audio_filter,
             "-ac", "2",
             "-ar", "44100",
             "-c:a", "libmp3lame",
