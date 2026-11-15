@@ -1,9 +1,10 @@
 """
-ScratchTube v6 Server
+ScratchTube v7 Server
 ---------------------
-- Resolution: 112x63 @ 14 FPS (RGB24: 21,168 bytes per frame)
-- High-speed single-pass FFmpeg conversion with ffprobe stream validation
-- Pure Python instant in-memory MP3 audio seeking (< 1ms vs ~2.5s FFmpeg spawn)
+- Resolution: 128x72 @ 15 FPS (RGB24: 27,648 bytes per frame)
+- 100-frame response batches
+- Single-pass FFmpeg conversion with ffprobe stream validation
+- In-memory MP3 frame indexing for audio seeking
 - Dedicated downloads directory with LRU cache pruning and temporary file cleanup
 - Strict search filtering excluding livestreams, private, deleted, and unplayable videos
 - Production Waitress WSGI server (mandatory)
@@ -37,7 +38,7 @@ try:
     from waitress import serve
 except ImportError:
     print("=" * 64)
-    print("[FATAL] Waitress is required to run ScratchTube v6.")
+    print("[FATAL] Waitress is required to run ScratchTube v7.")
     print("Please install Waitress by running:")
     print("    pip install waitress")
     print("=" * 64)
@@ -157,7 +158,7 @@ def meta_path(video_id):
 # CACHE MANAGEMENT & STARTUP
 # ---------------------------------------------------------
 def init_dl():
-    """Scan and reuse valid existing v6 cache items at startup; clean temp files."""
+    """Scan and reuse valid existing v7 cache items at startup; clean temp files."""
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)
     
     # Clean up any leftover temporary files from interrupted runs
@@ -584,7 +585,7 @@ def run_conversion(src, video_id, duration_hint=0):
     """
     Single-pass FFmpeg conversion:
     - Explicitly maps verified video and audio streams
-    - Scales video to 128x72 @ 14 FPS RGB24 (27,648 bytes per frame)
+    - Scales video to 128x72 @ 15 FPS RGB24 (27,648 bytes per frame)
     - Encodes MP3 44.1kHz stereo audio
     - Handles audio-less or unusual stream layouts seamlessly
     """
@@ -665,7 +666,7 @@ def run_conversion(src, video_id, duration_hint=0):
     return duration
 
 def reuse_existing(video_id):
-    """Reuse cached frames and audio only when they match the v7 128x72 @ 14 FPS format."""
+    """Reuse cached frames and audio only when they match the v7 128x72 @ 15 FPS format."""
     fp, ap = frames_path(video_id), audio_path(video_id)
     if not (os.path.isfile(fp) and os.path.isfile(ap) and os.path.getsize(ap) > 1024):
         return None
