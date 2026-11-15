@@ -63,6 +63,10 @@
         return `${HOST}/synth?text=${encodeURIComponent(`audio_${id}`)}`;
     }
 
+    // The video reads this media clock; keep playback at normal speed to avoid drift.
+    audio.playbackRate = 1;
+    audio.defaultPlaybackRate = 1;
+
     function resetAudio() {
         ++cmdGen;
         isReady = false;
