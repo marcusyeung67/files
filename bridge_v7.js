@@ -99,7 +99,7 @@
                 resolve(value && gen === cmdGen);
             };
             const onReady = () => {
-                if (gen === cmdGen && audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
+                if (gen === cmdGen && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
                     isReady = true;
                     finish(true);
                 }
@@ -158,7 +158,7 @@
         const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
         const target = Math.max(0, duration > 0 ? Math.min(Number(sec) || 0, Math.max(0, duration - 0.06)) : (Number(sec) || 0));
 
-        if (!Number.isFinite(audio.currentTime) || Math.abs(audio.currentTime - target) > 0.25) {
+        if (!Number.isFinite(audio.currentTime) || Math.abs(audio.currentTime - target) > 0.04) {
             try {
                 audio.currentTime = target;
                 if (!(await waitForSeek(gen))) return;
